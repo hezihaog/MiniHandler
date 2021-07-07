@@ -1,0 +1,3 @@
+rootProject.name = "MiniHandler"
+include ':app'
+include ':mini-handler'
