@@ -19,3 +19,6 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+# 不把没有用到的类去掉，否则开启混淆的话，aar中的class是空的
+-dontshrink
