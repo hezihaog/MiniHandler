@@ -31,6 +31,7 @@ public class MainActivity extends AppCompatActivity {
 
     private MiniHandler mEventHandler;
     private MiniHandlerThread mHandlerThread;
+    private Timer mTimer;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -45,6 +46,9 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        if (mTimer != null) {
+            mTimer.cancel();
+        }
         if (mHandlerThread != null) {
             mHandlerThread.quitSafely();
         }
@@ -97,8 +101,8 @@ public class MainActivity extends AppCompatActivity {
      * 开启定时器
      */
     private void startTimer() {
-        Timer timer = new Timer();
-        timer.schedule(new TimerTask() {
+        mTimer = new Timer();
+        mTimer.schedule(new TimerTask() {
             @Override
             public void run() {
                 mEventHandler.sendMessage(Message.obtain(ACTION_COUNT_DOWN));
