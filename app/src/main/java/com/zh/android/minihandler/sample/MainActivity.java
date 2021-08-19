@@ -5,6 +5,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.TextView;
 
 import com.zh.android.minihandler.Message;
 import com.zh.android.minihandler.MiniHandler;
@@ -26,6 +27,7 @@ public class MainActivity extends AppCompatActivity {
     public static final int ACTION_COUNT_DOWN = 2;
 
     private Button vSendMsgToEventThread;
+    private TextView vCurrentTime;
 
     private MiniHandler mEventHandler;
     private MiniHandlerThread mHandlerThread;
@@ -62,10 +64,15 @@ public class MainActivity extends AppCompatActivity {
                     Log.d(TAG, "MiniHandler 处于的线程：" + Thread.currentThread());
                     ToastUtil.toast(getApplicationContext(), msg);
                 } else if (action == ACTION_COUNT_DOWN) {
-                    long currentTimeMillis = System.currentTimeMillis();
-                    String strDateFormat = "yyyy-MM-dd HH:mm:ss";
-                    SimpleDateFormat format = new SimpleDateFormat(strDateFormat);
-                    Log.d(TAG, "当前时间：" + format.format(currentTimeMillis));
+                    SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                    String timeStr = format.format(System.currentTimeMillis());
+                    Log.d(TAG, "当前时间：" + timeStr);
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            vCurrentTime.setText(timeStr);
+                        }
+                    });
                 }
             }
         };
@@ -73,6 +80,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void findView() {
         vSendMsgToEventThread = findViewById(R.id.send_msg_to_event_thread);
+        vCurrentTime = findViewById(R.id.current_time);
     }
 
     private void bindView() {
