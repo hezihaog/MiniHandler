@@ -74,8 +74,6 @@ public class Looper implements EventHandler<Message> {
      * 安全退出，会等所有事件都执行完，再关闭
      */
     public void quitSafely() {
-        Looper looper = myLooper();
-        Disruptor<Message> disruptor = looper.disruptor;
         disruptor.shutdown();
     }
 
