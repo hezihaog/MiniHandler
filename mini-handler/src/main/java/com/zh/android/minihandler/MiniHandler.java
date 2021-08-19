@@ -32,6 +32,8 @@ public class MiniHandler {
             event.what = message.what;
             event.obj = message.obj;
             event.target = message.target;
+            //回收临时Message对象
+            message.recycleUnchecked();
         } finally {
             //发布事件
             ringBuffer.publish(sequence);
