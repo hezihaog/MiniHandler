@@ -11,8 +11,6 @@ import com.zh.android.minihandler.Message;
 import com.zh.android.minihandler.MiniHandler;
 
 import java.text.SimpleDateFormat;
-import java.util.Timer;
-import java.util.TimerTask;
 
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = "MiniHandler";
@@ -31,7 +29,7 @@ public class MainActivity extends AppCompatActivity {
 
     private MiniHandler mEventHandler;
     private MiniHandlerThread mHandlerThread;
-    private Timer mTimer;
+    private Thread mTimerThread;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -46,8 +44,8 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        if (mTimer != null) {
-            mTimer.cancel();
+        if (mTimerThread != null) {
+            mTimerThread.interrupt();
         }
         if (mHandlerThread != null) {
             mHandlerThread.quitSafely();
@@ -56,30 +54,34 @@ public class MainActivity extends AppCompatActivity {
 
     private void startEventLoop() {
         //事件处理线程
-        mHandlerThread = new MiniHandlerThread("handler-thread");
-        mHandlerThread.start();
-        mEventHandler = new MiniHandler(mHandlerThread.getLooper()) {
-            @Override
-            public void handleMessage(Message message) {
-                super.handleMessage(message);
-                long action = message.what;
-                if (action == ACTION_TOAST) {
-                    String msg = message.obj.toString();
-                    Log.d(TAG, "MiniHandler 处于的线程：" + Thread.currentThread());
-                    ToastUtil.toast(getApplicationContext(), msg);
-                } else if (action == ACTION_COUNT_DOWN) {
-                    SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-                    String timeStr = format.format(System.currentTimeMillis());
-                    Log.d(TAG, "当前时间：" + timeStr);
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            vCurrentTime.setText(timeStr);
-                        }
-                    });
+        if (mHandlerThread == null) {
+            mHandlerThread = new MiniHandlerThread("handler-thread");
+            mHandlerThread.start();
+        }
+        if (mEventHandler == null) {
+            mEventHandler = new MiniHandler(mHandlerThread.getLooper()) {
+                @Override
+                public void handleMessage(Message message) {
+                    super.handleMessage(message);
+                    long action = message.what;
+                    if (action == ACTION_TOAST) {
+                        String msg = message.obj.toString();
+                        Log.d(TAG, "MiniHandler 处于的线程：" + Thread.currentThread());
+                        ToastUtil.toast(getApplicationContext(), msg);
+                    } else if (action == ACTION_COUNT_DOWN) {
+                        SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                        String timeStr = format.format(System.currentTimeMillis());
+                        Log.d(TAG, "当前时间：" + timeStr);
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                vCurrentTime.setText(timeStr);
+                            }
+                        });
+                    }
                 }
-            }
-        };
+            };
+        }
     }
 
     private void findView() {
@@ -101,12 +103,19 @@ public class MainActivity extends AppCompatActivity {
      * 开启定时器
      */
     private void startTimer() {
-        mTimer = new Timer();
-        mTimer.schedule(new TimerTask() {
+        mTimerThread = new Thread(new Runnable() {
             @Override
             public void run() {
-                mEventHandler.sendMessage(Message.obtain(ACTION_COUNT_DOWN));
+                while (true) {
+                    try {
+                        Thread.sleep(1000);
+                        mEventHandler.sendMessage(Message.obtain(ACTION_COUNT_DOWN));
+                    } catch (InterruptedException e) {
+                        //ignore
+                    }
+                }
             }
-        }, 0, 1000);
+        });
+        mTimerThread.start();
     }
 }
