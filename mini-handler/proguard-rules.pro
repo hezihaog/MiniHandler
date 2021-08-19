@@ -22,3 +22,5 @@
 
 # 不把没有用到的类去掉，否则开启混淆的话，aar中的class是空的
 -dontshrink
+# 不混淆 Disruptor
+-keep class com.lmax.disruptor.** { *; }

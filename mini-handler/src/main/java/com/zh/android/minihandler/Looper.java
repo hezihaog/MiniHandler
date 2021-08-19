@@ -1,15 +1,45 @@
 package com.zh.android.minihandler;
 
-public class Looper {
-    private static final ThreadLocal<Looper> sThreadLocal = new ThreadLocal<>();
-    /**
-     * 消息队列
-     */
-    final MessageQueue mMessageQueue;
+import com.lmax.disruptor.EventFactory;
+import com.lmax.disruptor.EventHandler;
+import com.lmax.disruptor.YieldingWaitStrategy;
+import com.lmax.disruptor.dsl.Disruptor;
+import com.lmax.disruptor.dsl.ProducerType;
 
+import java.util.concurrent.Executor;
+
+public class Looper implements EventHandler<Message> {
+    private static final ThreadLocal<Looper> sThreadLocal = new ThreadLocal<>();
+    final Disruptor<Message> disruptor;
+
+    /**
+     * 一个线程，只有一个Looper，一个Looper也只有一个消息队列
+     */
     private Looper() {
-        //一个线程，只有一个Looper，一个Looper也只有一个消息队列
-        mMessageQueue = new MessageQueue();
+        //RingBuffer 大小，必须是 2 的 N 次方；
+        int ringBufferSize = 1024 * 1024;
+        //事件工厂
+        MessageFactory messageFactory = new MessageFactory();
+        //用于事件处理的执行器
+        Executor executor = new Executor() {
+            @Override
+            public void execute(Runnable command) {
+                command.run();
+            }
+        };
+        disruptor = new Disruptor<>(messageFactory, ringBufferSize, executor, ProducerType.SINGLE,
+                new YieldingWaitStrategy());
+        disruptor.handleEventsWith(this);
+    }
+
+    /**
+     * 事件工厂
+     */
+    private static class MessageFactory implements EventFactory<Message> {
+        @Override
+        public Message newInstance() {
+            return Message.obtain();
+        }
     }
 
     /**
@@ -36,10 +66,21 @@ public class Looper {
     public static void loop() {
         //获取当前线程的轮询器
         Looper looper = myLooper();
-        MessageQueue queue = looper.mMessageQueue;
-        while (true) {
-            Message message = queue.next();
-            message.target.dispatchMessage(message);
-        }
+        Disruptor<Message> disruptor = looper.disruptor;
+        disruptor.start();
+    }
+
+    /**
+     * 安全退出，会等所有事件都执行完，再关闭
+     */
+    public void quitSafely() {
+        Looper looper = myLooper();
+        Disruptor<Message> disruptor = looper.disruptor;
+        disruptor.shutdown();
+    }
+
+    @Override
+    public void onEvent(Message event, long sequence, boolean endOfBatch) throws Exception {
+        event.target.dispatchMessage(event);
     }
 }
