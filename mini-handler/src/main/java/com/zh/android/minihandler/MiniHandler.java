@@ -7,8 +7,10 @@ public class MiniHandler {
     private final MessageQueue mMessageQueue;
 
     public MiniHandler() {
-        //从当前线程中取出Looper
-        Looper looper = Looper.myLooper();
+        this(Looper.myLooper());
+    }
+
+    public MiniHandler(Looper looper) {
         //Looper没有绑定
         if (looper == null) {
             throw new RuntimeException("请先调用Looper.prepare()，创建Looper");

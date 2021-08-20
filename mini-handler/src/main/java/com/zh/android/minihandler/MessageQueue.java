@@ -5,6 +5,10 @@ import java.util.concurrent.BlockingQueue;
 
 public class MessageQueue {
     /**
+     * 是否退出
+     */
+    volatile boolean isQuit;
+    /**
      * 消息队列
      */
     private final BlockingQueue<Message> mMessageQueue = new ArrayBlockingQueue<Message>(50);
@@ -31,5 +35,10 @@ public class MessageQueue {
             e.printStackTrace();
         }
         return null;
+    }
+
+    public void quit() {
+        mMessageQueue.clear();
+        isQuit = true;
     }
 }

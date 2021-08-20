@@ -1,58 +1,121 @@
 package com.zh.android.minihandler.sample;
 
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
-import android.widget.Toast;
+import android.widget.TextView;
 
-import com.zh.android.minihandler.Looper;
 import com.zh.android.minihandler.Message;
 import com.zh.android.minihandler.MiniHandler;
 
+import java.text.SimpleDateFormat;
+
 public class MainActivity extends AppCompatActivity {
-    private static final String TAG = MainActivity.class.getSimpleName();
-    private MiniHandler mMainHandler;
+    private static final String TAG = "MiniHandler";
+
+    /**
+     * Toast任务
+     */
+    public static final int ACTION_TOAST = 1;
+    /**
+     * 倒计时
+     */
+    public static final int ACTION_COUNT_DOWN = 2;
+
+    private Button vSendMsgToEventThread;
+    private TextView vCurrentTime;
+
+    private MiniHandler mEventHandler;
+    private MiniHandlerThread mHandlerThread;
+    private Thread mTimerThread;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        //主线程
-        Thread mainThread = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                Looper.prepare();
-                mMainHandler = new MiniHandler() {
-                    @Override
-                    public void handleMessage(Message message) {
-                        super.handleMessage(message);
-                        Log.d(TAG, "MiniHandler 处于的线程：" + Thread.currentThread());
-                        Log.d(TAG, "MiniHandler 要处理的消息附件：" + message.obj.toString());
-                    }
-                };
-                Looper.loop();
-            }
-        });
-        mainThread.setName("main-thread");
-        mainThread.start();
+        startEventLoop();
+        findView();
+        bindView();
+        startTimer();
+    }
 
-        Button sendMsgToMain = findViewById(R.id.send_msg_to_main);
-        sendMsgToMain.setOnClickListener(new View.OnClickListener() {
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (mTimerThread != null) {
+            mTimerThread.interrupt();
+        }
+        if (mHandlerThread != null) {
+            mHandlerThread.quitSafely();
+        }
+    }
+
+    private void startEventLoop() {
+        //事件处理线程
+        if (mHandlerThread == null) {
+            mHandlerThread = new MiniHandlerThread("handler-thread");
+            mHandlerThread.start();
+        }
+        if (mEventHandler == null) {
+            mEventHandler = new MiniHandler(mHandlerThread.getLooper()) {
+                @Override
+                public void handleMessage(Message message) {
+                    super.handleMessage(message);
+                    long action = message.what;
+                    if (action == ACTION_TOAST) {
+                        String msg = message.obj.toString();
+                        Log.d(TAG, "MiniHandler 处于的线程：" + Thread.currentThread());
+                        ToastUtil.toast(getApplicationContext(), msg);
+                    } else if (action == ACTION_COUNT_DOWN) {
+                        SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                        String timeStr = format.format(System.currentTimeMillis());
+                        Log.d(TAG, "当前时间：" + timeStr);
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                vCurrentTime.setText(timeStr);
+                            }
+                        });
+                    }
+                }
+            };
+        }
+    }
+
+    private void findView() {
+        vSendMsgToEventThread = findViewById(R.id.send_msg_to_event_thread);
+        vCurrentTime = findViewById(R.id.current_time);
+    }
+
+    private void bindView() {
+        vSendMsgToEventThread.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                //子线程发消息到主线程
-                Thread childThread = new Thread(new Runnable() {
-                    @Override
-                    public void run() {
-                        Log.d(TAG, "子线程：" + Thread.currentThread());
-                        mMainHandler.sendMessage(Message.obtain(1, "点击"));
-                    }
-                });
-                childThread.setName("child-thread");
-                childThread.start();
+                //发消息到事件线程
+                mEventHandler.sendMessage(Message.obtain(ACTION_TOAST, "Toast~"));
             }
         });
+    }
+
+    /**
+     * 开启定时器
+     */
+    private void startTimer() {
+        mTimerThread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                while (true) {
+                    try {
+                        Thread.sleep(1000);
+                        mEventHandler.sendMessage(Message.obtain(ACTION_COUNT_DOWN));
+                    } catch (InterruptedException e) {
+                        //ignore
+                    }
+                }
+            }
+        });
+        mTimerThread.start();
     }
 }

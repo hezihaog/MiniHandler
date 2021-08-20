@@ -37,9 +37,18 @@ public class Looper {
         //获取当前线程的轮询器
         Looper looper = myLooper();
         MessageQueue queue = looper.mMessageQueue;
-        while (true) {
+        while (!queue.isQuit) {
             Message message = queue.next();
             message.target.dispatchMessage(message);
+            //回收Message对象
+            message.recycleUnchecked();
         }
+    }
+
+    /**
+     * 安全退出，会等所有事件都执行完，再关闭
+     */
+    public void quitSafely() {
+        mMessageQueue.quit();
     }
 }
