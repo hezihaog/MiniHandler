@@ -39,9 +39,12 @@ public class Looper {
         MessageQueue queue = looper.mMessageQueue;
         while (!queue.isQuit) {
             Message message = queue.next();
-            message.target.dispatchMessage(message);
-            //回收Message对象
-            message.recycleUnchecked();
+            try {
+                message.target.dispatchMessage(message);
+            } finally {
+                //回收Message对象
+                message.recycleUnchecked();
+            }
         }
     }
 
