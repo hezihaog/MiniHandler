@@ -1,8 +1,9 @@
 package com.zh.android.minihandler;
 
+import com.lmax.disruptor.BlockingWaitStrategy;
 import com.lmax.disruptor.EventFactory;
 import com.lmax.disruptor.EventHandler;
-import com.lmax.disruptor.YieldingWaitStrategy;
+import com.lmax.disruptor.WaitStrategy;
 import com.lmax.disruptor.dsl.Disruptor;
 import com.lmax.disruptor.dsl.ProducerType;
 
@@ -27,8 +28,15 @@ public class Looper implements EventHandler<Message> {
                 command.run();
             }
         };
-        disruptor = new Disruptor<>(messageFactory, ringBufferSize, executor, ProducerType.SINGLE,
-                new YieldingWaitStrategy());
+        //等待策略
+        //BusySpinWaitStrategy：自旋等待，类似Linux Kernel使用的自旋锁。低延迟但同时对CPU资源的占用也多。
+        //BlockingWaitStrategy：使用锁和条件变量。CPU资源的占用少，延迟大。
+        //SleepingWaitStrategy：在多次循环尝试不成功后，选择让出CPU，等待下次调度，多次调度后仍不成功，尝试前睡眠一个纳秒级别的时间再尝试。这种策略平衡了延迟和CPU资源占用，但延迟不均匀。
+        //YieldingWaitStrategy：在多次循环尝试不成功后，选择让出CPU，等待下次调。平衡了延迟和CPU资源占用，但延迟也比较均匀。
+        //PhasedBackoffWaitStrategy ： 上面多种策略的综合，CPU资源的占用少，延迟大。
+        WaitStrategy waitStrategy = new BlockingWaitStrategy();
+        disruptor = new Disruptor<>(messageFactory, ringBufferSize,
+                executor, ProducerType.SINGLE, waitStrategy);
         disruptor.handleEventsWith(this);
     }
 
