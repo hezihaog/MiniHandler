@@ -87,9 +87,12 @@ public class Looper implements EventHandler<Message> {
 
     @Override
     public void onEvent(Message event, long sequence, boolean endOfBatch) throws Exception {
-        //分发消息到Handler
-        event.target.dispatchMessage(event);
-        //回收Message对象
-        event.recycleUnchecked();
+        try {
+            //分发消息到Handler
+            event.target.dispatchMessage(event);
+        } finally {
+            //回收Message对象
+            event.recycleUnchecked();
+        }
     }
 }
