@@ -6,6 +6,8 @@ import android.os.Looper;
 import android.widget.Toast;
 
 public class ToastUtil {
+    private static final Handler mMainHandler = new Handler(Looper.getMainLooper());
+
     private ToastUtil() {
     }
 
@@ -19,7 +21,7 @@ public class ToastUtil {
         if (Looper.getMainLooper() == Looper.myLooper()) {
             task.run();
         } else {
-            new Handler(Looper.getMainLooper()).post(task);
+            mMainHandler.post(task);
         }
     }
 }
