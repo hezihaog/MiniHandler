@@ -1,9 +1,12 @@
 package com.zh.android.minihandler;
 
+import java.util.concurrent.Delayed;
+import java.util.concurrent.TimeUnit;
+
 /**
  * 消息事件实体，同时
  */
-public class Message {
+public class Message implements Delayed {
     /**
      * 使用中的标志位
      */
@@ -42,6 +45,14 @@ public class Message {
      * 消息的处理器
      */
     public MiniHandler target;
+    /**
+     * 要执行的任务，可为null
+     */
+    public Runnable callback;
+    /**
+     * 指定的执行时间，毫秒值
+     */
+    public long workTimeMillis;
 
     /**
      * 回收Message
@@ -53,6 +64,8 @@ public class Message {
         what = 0;
         obj = null;
         target = null;
+        callback = null;
+        workTimeMillis = 0;
         synchronized (sPoolSync) {
             if (sPoolSize < MAX_POOL_SIZE) {
                 next = sPool;
@@ -122,5 +135,16 @@ public class Message {
         message.what = what;
         message.obj = obj;
         return message;
+    }
+
+    @Override
+    public long getDelay(TimeUnit unit) {
+        return unit.convert(workTimeMillis
+                - System.currentTimeMillis(), TimeUnit.MILLISECONDS);
+    }
+
+    @Override
+    public int compareTo(Delayed o) {
+        return (int) (this.getDelay(TimeUnit.MILLISECONDS) - o.getDelay(TimeUnit.MILLISECONDS));
     }
 }

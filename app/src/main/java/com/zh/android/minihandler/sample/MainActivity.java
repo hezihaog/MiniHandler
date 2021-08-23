@@ -1,5 +1,6 @@
 package com.zh.android.minihandler.sample;
 
+import android.annotation.SuppressLint;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
@@ -19,17 +20,12 @@ public class MainActivity extends AppCompatActivity {
      * Toast任务
      */
     public static final int ACTION_TOAST = 1;
-    /**
-     * 倒计时
-     */
-    public static final int ACTION_COUNT_DOWN = 2;
 
     private Button vSendMsgToEventThread;
     private TextView vCurrentTime;
 
     private MiniHandler mEventHandler;
     private MiniHandlerThread mHandlerThread;
-    private Thread mTimerThread;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -44,9 +40,6 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        if (mTimerThread != null) {
-            mTimerThread.interrupt();
-        }
         if (mHandlerThread != null) {
             mHandlerThread.quitSafely();
         }
@@ -68,16 +61,6 @@ public class MainActivity extends AppCompatActivity {
                         String msg = message.obj.toString();
                         Log.d(TAG, "MiniHandler 处于的线程：" + Thread.currentThread());
                         ToastUtil.toast(getApplicationContext(), msg);
-                    } else if (action == ACTION_COUNT_DOWN) {
-                        SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-                        String timeStr = format.format(System.currentTimeMillis());
-                        Log.d(TAG, "当前时间：" + timeStr);
-                        runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                vCurrentTime.setText(timeStr);
-                            }
-                        });
                     }
                 }
             };
@@ -103,19 +86,21 @@ public class MainActivity extends AppCompatActivity {
      * 开启定时器
      */
     private void startTimer() {
-        mTimerThread = new Thread(new Runnable() {
+        mEventHandler.postDelayed(new Runnable() {
             @Override
             public void run() {
-                while (true) {
-                    try {
-                        Thread.sleep(1000);
-                        mEventHandler.sendMessage(Message.obtain(ACTION_COUNT_DOWN));
-                    } catch (InterruptedException e) {
-                        //ignore
+                @SuppressLint("SimpleDateFormat")
+                SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                String timeStr = format.format(System.currentTimeMillis());
+                Log.d(TAG, "当前时间：" + timeStr);
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        vCurrentTime.setText(timeStr);
                     }
-                }
+                });
+                mEventHandler.postDelayed(this, 1000);
             }
-        });
-        mTimerThread.start();
+        }, 1000);
     }
 }

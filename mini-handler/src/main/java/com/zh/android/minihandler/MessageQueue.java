@@ -1,7 +1,9 @@
 package com.zh.android.minihandler;
 
-import java.util.concurrent.ArrayBlockingQueue;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.DelayQueue;
 
 public class MessageQueue {
     /**
@@ -11,17 +13,20 @@ public class MessageQueue {
     /**
      * 消息队列
      */
-    private final BlockingQueue<Message> mMessageQueue = new ArrayBlockingQueue<Message>(50);
+    private final BlockingQueue<Message> mMessageQueue = new DelayQueue<>();
 
     /**
      * 消息入队
      */
-    public void enqueueMessage(Message message) {
+    public boolean enqueueMessage(Message message, long uptimeMillis) {
         try {
+            message.workTimeMillis = uptimeMillis;
             mMessageQueue.put(message);
+            return true;
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
+        return false;
     }
 
     /**
@@ -35,6 +40,22 @@ public class MessageQueue {
             e.printStackTrace();
         }
         return null;
+    }
+
+    /**
+     * 移除队列中指定Handler的未执行的回调和消息
+     */
+    public final void removeCallbacksAndMessages(MiniHandler handler) {
+        if (handler == null) {
+            return;
+        }
+        List<Message> targetMessages = new ArrayList<>();
+        for (Message message : mMessageQueue) {
+            if (message.target == handler) {
+                targetMessages.add(message);
+            }
+        }
+        mMessageQueue.removeAll(targetMessages);
     }
 
     public void quit() {
