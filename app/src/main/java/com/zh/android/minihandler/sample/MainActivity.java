@@ -20,8 +20,13 @@ public class MainActivity extends AppCompatActivity {
      * Toast任务
      */
     public static final int ACTION_TOAST = 1;
+    /**
+     * 延时任务
+     */
+    public static final int ACTION_DELAY = 2;
 
     private Button vSendMsgToEventThread;
+    private Button vSendDelayMsg;
     private TextView vCurrentTime;
 
     private MiniHandler mEventHandler;
@@ -59,8 +64,10 @@ public class MainActivity extends AppCompatActivity {
                     long action = message.what;
                     if (action == ACTION_TOAST) {
                         String msg = message.obj.toString();
-                        Log.d(TAG, "MiniHandler 处于的线程：" + Thread.currentThread());
                         ToastUtil.toast(getApplicationContext(), msg);
+                    } else if (action == ACTION_DELAY) {
+                        String delayMsg = message.obj.toString();
+                        ToastUtil.toast(getApplicationContext(), delayMsg);
                     }
                 }
             };
@@ -69,6 +76,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void findView() {
         vSendMsgToEventThread = findViewById(R.id.send_msg_to_event_thread);
+        vSendDelayMsg = findViewById(R.id.send_delay_msg);
         vCurrentTime = findViewById(R.id.current_time);
     }
 
@@ -78,6 +86,12 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View v) {
                 //发消息到事件线程
                 mEventHandler.sendMessage(Message.obtain(ACTION_TOAST, "Toast~"));
+            }
+        });
+        vSendDelayMsg.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                mEventHandler.sendMessageDelayed(Message.obtain(ACTION_DELAY, "延时消息~"), 2000);
             }
         });
     }
