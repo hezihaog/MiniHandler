@@ -1,11 +1,7 @@
-package com.zh.android.minihandler.sample;
+package com.zh.android.minihandler;
 
 import android.os.Process;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
 
-import com.zh.android.minihandler.Looper;
-import com.zh.android.minihandler.MiniHandler;
 
 /**
  * A {@link Thread} that has a {@link Looper}.
@@ -17,8 +13,7 @@ public class MiniHandlerThread extends Thread {
     int mPriority;
     int mTid = -1;
     Looper mLooper;
-    private @Nullable
-    MiniHandler mHandler;
+    private MiniHandler mHandler;
 
     public MiniHandlerThread(String name) {
         super(name);
@@ -86,7 +81,6 @@ public class MiniHandlerThread extends Thread {
      * @return a shared {@link MiniHandler} associated with this thread
      * @hide
      */
-    @NonNull
     public MiniHandler getThreadHandler() {
         if (mHandler == null) {
             mHandler = new MiniHandler(getLooper());

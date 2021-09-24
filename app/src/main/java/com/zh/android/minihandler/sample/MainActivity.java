@@ -10,6 +10,7 @@ import android.widget.TextView;
 
 import com.zh.android.minihandler.Message;
 import com.zh.android.minihandler.MiniHandler;
+import com.zh.android.minihandler.MiniHandlerThread;
 
 import java.text.SimpleDateFormat;
 
