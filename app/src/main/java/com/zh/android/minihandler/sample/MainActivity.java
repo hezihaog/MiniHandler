@@ -108,12 +108,15 @@ public class MainActivity extends AppCompatActivity {
                 SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
                 String timeStr = format.format(System.currentTimeMillis());
                 Log.d(TAG, "当前时间：" + timeStr);
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        vCurrentTime.setText(timeStr);
-                    }
-                });
+                //App在前台时，才更新页面
+                if (AppMonitor.get().isAppForeground()) {
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            vCurrentTime.setText(timeStr);
+                        }
+                    });
+                }
                 mEventHandler.postDelayed(this, 1000);
             }
         }, 1000);
